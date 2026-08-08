@@ -1,0 +1,25 @@
+name: keep-alive
+
+# Mantém o serviço do Render (plano grátis) ACORDADO — sem isto ele hiberna
+# após ~15 min sem acesso e o primeiro request volta a dar 404/cold start.
+# Pinga a cada ~10 min. Grátis. Ajuste a URL se trocar de serviço/domínio.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ping ranking
+        run: |
+          URL="https://bolao-ranking.onrender.com/api/ranking"
+          for i in 1 2 3; do
+            code=$(curl -sS -m 60 -o /dev/null -w "%{http_code}" "$URL") || true
+            echo "tentativa $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "serviço não respondeu 200 (pode estar acordando)"; exit 0
