@@ -1,0 +1,18 @@
+# Deploy 1-clique no Render (nuvem 24h). Depois de subir, aponte seu domínio
+# pra este serviço nas configs do Render (Custom Domain).
+services:
+  - type: web
+    name: bolao-ranking
+    runtime: python
+    plan: starter                     # tem disco persistente; free zera o disco
+    buildCommand: pip install -r requirements-web.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --threads 8 --timeout 120
+    envVars:
+      - key: BOLAO_ADMIN_KEY
+        sync: false                   # defina no painel (senha do /admin e publish)
+      - key: BOLAO_DB
+        value: /var/data/bolao.db     # dentro do disco persistente abaixo
+    disk:
+      name: bolao-data
+      mountPath: /var/data            # sqlite PRECISA de disco persistente
+      sizeGB: 1

@@ -1,0 +1,26 @@
+# ── SEGREDOS (nunca subir) ──────────────────────────────────────────────
+.render-key.txt
+.gh-token.txt
+*-token.txt
+*.key
+*_key.txt
+# pasta data/ = banco (nomes dos apostadores) + ai_config.json (chave IA) + cloud_config.json
+data/
+
+# ── artefatos / binários grandes ────────────────────────────────────────
+build/
+dist/
+*.exe
+cloudflared.exe
+tunnel*.log
+__pycache__/
+*.pyc
+*.pyo
+
+# ── amostras/insumos pesados (não precisam na nuvem) ────────────────────
+samples/
+*.pdf
+*.jpeg
+*.jpg
+*.png
+leitura_*.csv

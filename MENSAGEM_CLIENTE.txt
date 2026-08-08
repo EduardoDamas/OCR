@@ -1,0 +1,15 @@
+Olá! Tenho boas notícias sobre a leitura automática das cartelas (folhas BOLÃO EXTRA).
+
+A nova versão está pronta e os resultados melhoraram muito:
+
+• Antes o sistema lia corretamente cerca de 50% das marcações nas folhas mais fracas.
+• Agora a precisão é de 97% nas folhas de calibração e de 93% em folhas TOTALMENTE NOVAS (que o sistema nunca tinha visto) — que é o resultado mais próximo do uso real.
+• 8 das 10 folhas novas ficaram entre 92% e 100%. Em fotos planas e bem tiradas, chega a 99–100%.
+
+O ponto mais importante para um sistema que lida com dinheiro: ele NÃO erra em silêncio. Sempre que uma marcação fica em dúvida (rasura, marca em cima da linha) ou a foto está muito torta/dobrada, o sistema DESTACA aquilo para conferência manual. Assim o operador revisa em segundos só o que está em dúvida, e o risco de um palpite errado entrar sem ninguém perceber é mínimo (menos de 1 em cada 140 marcações).
+
+Além disso, tudo funciona de forma GRATUITA e OFFLINE: não há nenhuma mensalidade, API paga ou necessidade de internet.
+
+Uma dica para máxima precisão: fotografar a folha apoiada numa superfície plana, de cima e o mais reta possível — foi assim que algumas folhas chegaram a 100%.
+
+Em anexo segue o relatório completo com os resultados folha a folha. Qualquer dúvida, estou à disposição!

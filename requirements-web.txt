@@ -1,0 +1,5 @@
+# Deps ENXUTAS do servidor da nuvem (link fixo 24h). Só serve o ranking — NÃO
+# faz OCR, então nada de opencv/pymupdf/numpy. Mantém o deploy leve e rápido.
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+gunicorn>=21.2.0

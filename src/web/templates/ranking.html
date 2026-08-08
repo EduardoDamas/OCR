@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bolão — Ranking ao Vivo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-0:   #060b16;
+      --bg-1:   #0a1424;
+      --text:   #eaf1fd;
+      --muted:  #8ba1c4;
+      --faint:  #56688a;
+      --line:   rgba(255,255,255,.08);
+      --glass:  rgba(255,255,255,.045);
+      --glass-2:rgba(255,255,255,.07);
+      --green:  #16d488;
+      --green-d:#0fae6e;
+      --accent: #3b82f6;
+      --gold:   #ffcf3f;
+      --silver: #cfd9e8;
+      --bronze: #e0955b;
+      --red:    #ff5a6a;
+      --shadow: 0 18px 50px -12px rgba(0,0,0,.6);
+      --radius: 16px;
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg-0);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      min-height: 100vh;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    /* ambient background */
+    body::before {
+      content:""; position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(1100px 600px at 12% -8%, rgba(59,130,246,.22), transparent 60%),
+        radial-gradient(900px 620px at 100% 0%, rgba(22,212,136,.16), transparent 55%),
+        radial-gradient(1000px 700px at 50% 120%, rgba(124,58,237,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    }
+
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 clamp(.75rem, 3vw, 1.5rem); }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      background: linear-gradient(180deg, rgba(8,15,28,.85), rgba(8,15,28,.55));
+      border-bottom: 1px solid var(--line);
+    }
+    .head-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .75rem; padding: .85rem 0; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+    .brand .logo {
+      width: 40px; height: 40px; border-radius: 12px; flex: none;
+      display: grid; place-items: center; font-size: 1.25rem;
+      background: linear-gradient(145deg, #14233f, #0c1830);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .brand h1 {
+      font-size: clamp(1.05rem, 3.4vw, 1.35rem); font-weight: 800;
+      letter-spacing: .01em; line-height: 1.05;
+    }
+    .brand h1 span {
+      display:block; font-size: .68rem; font-weight: 700; letter-spacing: .22em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--green), #7be8bf);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .head-actions { display: flex; align-items: center; gap: .5rem; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .5rem .85rem; border-radius: 999px; border: 1px solid var(--line);
+      font-size: .82rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+      color: var(--text); background: var(--glass);
+      transition: transform .15s ease, background .2s ease, border-color .2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:hover { background: var(--glass-2); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary {
+      border-color: transparent;
+      background: linear-gradient(145deg, var(--green), var(--green-d));
+      color: #04140d; box-shadow: 0 8px 20px -8px rgba(22,212,136,.7);
+    }
+
+    .live { display:inline-flex; align-items:center; gap:.4rem; font-size:.72rem;
+      font-weight:700; letter-spacing:.12em; text-transform:uppercase; color: var(--muted); }
+    .dot { width:9px; height:9px; border-radius:50%; background: var(--faint); }
+    .dot.on { background: var(--green); box-shadow: 0 0 0 0 rgba(22,212,136,.7);
+      animation: pulse 1.8s infinite; }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(22,212,136,.55); }
+      70%  { box-shadow: 0 0 0 8px rgba(22,212,136,0); }
+      100% { box-shadow: 0 0 0 0 rgba(22,212,136,0); }
+    }
+
+    /* ── Games bar ──────────────────────────────────────────── */
+    .games { display:flex; gap:.4rem; overflow-x:auto; padding:.7rem 0 .2rem;
+      scrollbar-width:none; }
+    .games::-webkit-scrollbar { display:none; }
+    .chip {
+      flex:none; min-width: 58px; text-align:center; padding:.4rem .55rem;
+      border-radius: 12px; background: var(--glass); border:1px solid var(--line);
+      transition: all .25s ease;
+    }
+    .chip .g { display:block; font-size:.6rem; font-weight:700; letter-spacing:.1em;
+      color: var(--faint); }
+    .chip .r { display:block; font-size:.85rem; font-weight:800; color: var(--muted); margin-top:2px; }
+    .chip.set { border-color: transparent;
+      background: linear-gradient(145deg, rgba(59,130,246,.28), rgba(59,130,246,.12)); }
+    .chip.set .r { color: #dbe8ff; }
+    .chip.anul { background: var(--glass); }
+    .chip.anul .r { color: var(--faint); text-decoration: line-through; }
+
+    /* ── Summary ────────────────────────────────────────────── */
+    .summary { color: var(--muted); font-size:.82rem; margin:.9rem 0 .2rem;
+      display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .summary b { color: var(--text); font-weight:700; }
+    .pillcount { background: var(--glass); border:1px solid var(--line);
+      padding:.2rem .55rem; border-radius:999px; font-size:.74rem; }
+
+    /* ── Destaque (líder + chance de acertos) ───────────────── */
+    .hero { display:grid; grid-template-columns: 1fr auto 1fr; gap:1rem;
+      align-items:center; margin: 1.1rem 0 1.4rem; padding: 1.1rem 1.2rem;
+      border-radius: var(--radius); border:1px solid rgba(22,212,136,.35);
+      background:
+        radial-gradient(500px 220px at 18% 0%, rgba(255,207,63,.14), transparent 60%),
+        radial-gradient(520px 240px at 85% 100%, rgba(22,212,136,.16), transparent 60%),
+        linear-gradient(180deg, #0e1c31, #0a1424);
+      box-shadow: var(--shadow); animation: rise .5s cubic-bezier(.2,.8,.3,1) both; }
+    .hero .side { min-width:0; }
+    .hero .tag { display:inline-block; font-size:.62rem; font-weight:800;
+      letter-spacing:.18em; text-transform:uppercase; color:var(--muted);
+      border:1px solid var(--line); border-radius:999px; padding:.2rem .6rem;
+      margin-bottom:.45rem; }
+    .hero .lead-name { font-weight:800; font-size:1.05rem; overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap; }
+    .hero .lead-sc { font-size:1.9rem; font-weight:800; color:var(--gold); line-height:1.1; }
+    .hero .lead-sc small { font-size:.66rem; letter-spacing:.14em; color:var(--muted);
+      text-transform:uppercase; display:block; font-weight:700; }
+    .hero .cup { font-size:2.6rem; filter: drop-shadow(0 6px 14px rgba(255,207,63,.45)); }
+    .hero .chance-n { font-size:2.4rem; font-weight:800; color:var(--green); line-height:1; }
+    .hero .chance-t { font-size:.92rem; font-weight:700; line-height:1.25; margin-top:.15rem; }
+    .hero .chance-t b { color:var(--green); }
+    .hero .sub { margin-top:.5rem; font-size:.74rem; color:var(--muted);
+      border-top:1px solid var(--line); padding-top:.45rem; }
+    .hero .sub b { color:var(--text); }
+    .hero.final { border-color: rgba(255,207,63,.5); }
+    .hero.final .chance-n { color: var(--gold); }
+    @keyframes rise { from { opacity:0; transform: translateY(16px); } }
+    @media (max-width: 560px) {
+      .hero { grid-template-columns: 1fr; text-align:center; gap:.6rem; }
+      .hero .cup { display:none; }
+      .hero .lead-name { white-space:normal; }
+    }
+
+    /* ── Aviso de SIMULAÇÃO/PARCIAL (o público nunca deve achar que é o
+       resultado oficial — o cliente digita parciais e pode errar) ────── */
+    .simbanner { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+      margin:1rem 0 .2rem; }
+    .sim-tag { background:var(--gold); color:#1a1200; font-weight:800;
+      font-size:.82rem; letter-spacing:.1em; padding:.32rem .72rem;
+      border-radius:8px; box-shadow:0 4px 12px rgba(255,207,63,.3); }
+    .sim-sub { color:var(--muted); font-weight:800; font-size:.76rem;
+      letter-spacing:.06em; text-transform:uppercase; }
+    .warnbox { margin:.2rem 0 1rem; padding:.9rem 1rem; border-radius:12px;
+      border:1px solid rgba(255,207,63,.4); background:rgba(255,207,63,.07);
+      color:var(--text); font-size:.82rem; line-height:1.5; }
+    .warnbox b { color:var(--gold); }
+
+    /* ── List ───────────────────────────────────────────────── */
+    .list { display:flex; flex-direction:column; gap:.4rem; padding-bottom:2rem; }
+    .row {
+      display:grid; grid-template-columns: 40px 1fr auto; align-items:center; gap:.7rem;
+      padding:.6rem .8rem; border-radius: 14px;
+      background: var(--glass); border:1px solid var(--line);
+      transition: background .2s ease, transform .2s ease, border-color .2s ease;
+      animation: fadeIn .35s ease both;
+    }
+    .row:hover { background: var(--glass-2); }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } }
+    .pos { width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+      font-weight:800; font-size:.9rem; color: var(--muted);
+      background: rgba(255,255,255,.04); border:1px solid var(--line); }
+    .who { min-width:0; }
+    .who .name { font-weight:700; font-size:.95rem; overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap; }
+    .who .picks { display:flex; gap:3px; margin-top:5px; flex-wrap:wrap; }
+    .pk { font-size:.6rem; font-weight:700; padding:1px 5px; border-radius:5px;
+      background: rgba(255,255,255,.05); color: var(--faint); }
+    .pk.hit { background: rgba(22,212,136,.16); color: #74e7b6; }
+    .pk.miss{ background: rgba(255,90,106,.14); color: #ff97a1; }
+    .pk.anul{ text-decoration: line-through; opacity:.6; }
+    .row.clk { cursor:pointer; }
+    .row.clk:hover { background: var(--glass-2); }
+
+    /* ── Tabela (estilo Excel): ver o que cada um marcou, coluna por jogo ─── */
+    .tablewrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:.2rem 0 2rem;
+      border:1px solid var(--line); border-radius:12px; }
+    .rtable { border-collapse:collapse; width:100%; font-size:.82rem; white-space:nowrap; }
+    .rtable th, .rtable td { padding:.5rem .55rem; text-align:center;
+      border-bottom:1px solid var(--line); }
+    .rtable th { background: var(--glass-2); color:var(--muted); font-weight:800;
+      font-size:.68rem; text-transform:uppercase; letter-spacing:.04em;
+      position:sticky; top:0; }
+    .rtable th.who, .rtable td.who { text-align:left; white-space:normal; min-width:132px;
+      font-weight:700; position:sticky; left:0; background: var(--card, #0e1c31); }
+    .rtable th.who { background: var(--glass-2); z-index:1; }
+    .rtable tbody tr { cursor:pointer; }
+    .rtable tbody tr:hover td { background: var(--glass); }
+    .rtable td.pos { color:var(--muted); font-weight:800; }
+    .rtable td.pts { font-weight:800; color:var(--gold); }
+    .rtable td.tc.hit { background: rgba(22,212,136,.18); color:#74e7b6; font-weight:800; }
+    .rtable td.tc.miss{ color:#ff97a1; }
+    .rtable td.tc.anul{ color:var(--faint); text-decoration:line-through; }
+
+    /* ── Grade de UMA cartela (modal ao clicar) ─────────────────────────── */
+    .cgrid { display:flex; flex-direction:column; gap:.35rem; }
+    .cg-row { display:grid; grid-template-columns: 1fr auto 74px; gap:.6rem;
+      align-items:center; padding:.55rem .7rem; border-radius:10px;
+      border:1px solid var(--line); background: var(--glass); }
+    .cg-row.hit { border-color: rgba(22,212,136,.4); background: rgba(22,212,136,.06); }
+    .cg-row.miss{ border-color: rgba(255,90,106,.3); }
+    .cg-game { font-size:.82rem; font-weight:600; }
+    .cg-pick { font-weight:800; font-size:.9rem; }
+    .cg-tag { font-size:.72rem; font-weight:700; text-align:right; color:var(--muted); }
+    .cg-row.hit .cg-pick, .cg-row.hit .cg-tag { color:var(--green); }
+    .cg-row.miss .cg-pick, .cg-row.miss .cg-tag { color: var(--red); }
+    .scorebox { text-align:right; }
+    .scorebox .n { font-size:1.35rem; font-weight:800; line-height:1; }
+    .scorebox .bar { width:64px; height:5px; border-radius:3px; margin-top:6px;
+      background: rgba(255,255,255,.08); overflow:hidden; margin-left:auto; }
+    .scorebox .bar > i { display:block; height:100%; border-radius:3px;
+      background: linear-gradient(90deg, var(--green), #7bffce); transition: width .7s cubic-bezier(.2,.8,.3,1); }
+
+    /* empty / loading */
+    .empty { text-align:center; color: var(--muted); padding: 4rem 1rem; }
+    .empty .spin { width:38px; height:38px; margin:0 auto 1rem; border-radius:50%;
+      border:3px solid rgba(255,255,255,.1); border-top-color: var(--green);
+      animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer { text-align:center; padding:1.4rem 1rem 2rem; font-size:.72rem; color: var(--faint); }
+
+    /* ── Modals ─────────────────────────────────────────────── */
+    .overlay { position: fixed; inset:0; z-index:60; display:none;
+      align-items:center; justify-content:center; padding:1rem;
+      background: rgba(3,7,14,.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .overlay.show { display:flex; animation: fadeIn .2s ease; }
+    .modal {
+      width:100%; max-width: 440px; max-height: 84vh; overflow-y:auto;
+      background: linear-gradient(180deg, #101c30, #0b1424);
+      border:1px solid var(--line); border-radius: 20px; padding:1.35rem;
+      box-shadow: var(--shadow); animation: rise .25s ease both;
+    }
+    .modal h2 { font-size:1.15rem; text-align:center; margin-bottom:.15rem; }
+    .modal .sub { font-size:.8rem; color: var(--muted); text-align:center; margin-bottom:1.1rem; }
+    .drow { display:flex; justify-content:space-between; align-items:center;
+      padding:.65rem .85rem; background: var(--glass); border:1px solid var(--line);
+      border-radius:12px; margin-bottom:.45rem; font-size:1rem; }
+    .drow.top { background: linear-gradient(145deg, rgba(255,207,63,.16), var(--glass));
+      border-color: rgba(255,207,63,.35); color: var(--gold); font-weight:800; }
+    .drow .cnt { font-weight:800; }
+    .simcard { background: var(--glass); border:1px solid var(--line);
+      border-radius:12px; padding:.7rem .85rem; margin-bottom:.5rem; }
+    .simcard .h { font-weight:800; margin-bottom:.45rem; font-size:.9rem; }
+    .opts { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .opt { flex:1; min-width:80px; text-align:center; padding:.5rem; border-radius:10px;
+      background: rgba(255,255,255,.04); border:1px solid var(--line); }
+    .opt .lb { font-size:.68rem; color: var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    .opt .vv { font-size:1.3rem; font-weight:800; margin-top:2px; }
+    .opt.best { background: linear-gradient(145deg, rgba(22,212,136,.2), rgba(22,212,136,.06));
+      border-color: rgba(22,212,136,.4); }
+    .opt.best .vv { color: var(--green); }
+    /* Simulação INTERATIVA: o usuário escolhe o resultado de cada jogo */
+    .opt.pick { cursor:pointer; transition: background .12s, border-color .12s; }
+    .opt.pick:hover { border-color: rgba(22,212,136,.6); }
+    .opt.pick.sel { background: linear-gradient(145deg, rgba(22,212,136,.32), rgba(22,212,136,.12));
+      border-color: var(--green); }
+    .opt.pick.sel .lb { color: var(--green); }
+    .opt.pick .vv { font-size:.9rem; color: var(--muted); font-weight:700; }
+    .opt.pick.sel .vv { color: var(--green); }
+    .simresult { text-align:center; padding:1rem .9rem; margin-bottom:.9rem;
+      border-radius:14px; border:1px solid rgba(255,207,63,.45);
+      background:rgba(255,207,63,.07); min-height:70px; }
+    .simresult .rbig { font-size:2.6rem; font-weight:800; color:var(--gold); line-height:1; }
+    .simresult .rtxt { font-size:.92rem; margin-top:.25rem; }
+    .simresult .rtxt b { color: var(--green); }
+    .simresult .leadlist { margin-top:.7rem; text-align:left; }
+    .leadlist { margin-top:.4rem; max-height:190px; overflow:auto; font-size:.82rem; }
+    .leadlist .li { display:flex; justify-content:space-between; gap:.5rem;
+      padding:.4rem 0; border-bottom:1px solid var(--line); }
+    .leadlist .li span { color: var(--muted); font-size:.76rem; }
+    .close { width:100%; margin-top:1rem; padding:.7rem; border:none; border-radius:12px;
+      font-size:.92rem; font-weight:700; cursor:pointer; color:#04140d;
+      background: linear-gradient(145deg, var(--green), var(--green-d)); }
+
+    @media (max-width: 560px) {
+      .who .picks { display:none; }
+      .podium { gap:.4rem; }
+      .pod .sc { font-size:1.4rem; }
+      .scorebox .bar { width:48px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head-inner">
+    <div class="brand">
+      <div class="logo">⚽</div>
+      <h1>Bolão<span>Ranking ao Vivo</span></h1>
+    </div>
+    <div class="head-actions">
+      <button class="btn" id="view-btn" onclick="toggleView()">📋 Tabela</button>
+      <button class="btn" onclick="showParcial()">📊 Parcial</button>
+      <button class="btn primary" onclick="showSimular()">🎲 Simular</button>
+      <span class="live"><span class="dot" id="dot"></span><span id="conn">…</span></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="simbanner">
+    <span class="sim-tag">🎲 SIMULAÇÃO</span>
+    <span class="sim-sub">Parcial para acompanhamento</span>
+  </div>
+  <div class="warnbox">
+    <b>⚠️ Atenção:</b> Esta é apenas uma <b>parcial para acompanhamento</b>.
+    O resultado oficial será divulgado somente após o encerramento de todos os
+    jogos, em nossos grupos oficiais do WhatsApp. Até lá, os dados exibidos
+    podem sofrer alterações.
+  </div>
+  <div class="games" id="games"></div>
+  <div class="summary" id="summary"></div>
+  <div id="podium-wrap"></div>
+  <div id="list-wrap">
+    <div class="empty"><div class="spin"></div>Aguardando processamento das cartelas…</div>
+  </div>
+</div>
+
+<footer>⚡ Atualização em tempo real · Bolão OCR System</footer>
+
+<!-- Parcial modal -->
+<div class="overlay" id="parcial-modal" onclick="if(event.target===this)hideParcial()">
+  <div class="modal">
+    <h2>📊 Parcial do Momento</h2>
+    <div class="sub" id="parcial-sub"></div>
+    <div id="parcial-body"></div>
+    <button class="close" onclick="hideParcial()">Fechar</button>
+  </div>
+</div>
+
+<!-- Simular modal -->
+<div class="overlay" id="simular-modal" onclick="if(event.target===this)hideSimular()">
+  <div class="modal">
+    <h2>🎲 Simulação — E se…?</h2>
+    <div class="sub" id="simular-sub"></div>
+    <div id="simular-body"></div>
+    <button class="close" onclick="hideSimular()">Fechar</button>
+  </div>
+</div>
+
+<!-- Cartela (grade) modal — clicar numa cartela do ranking -->
+<div class="overlay" id="cartela-modal" onclick="if(event.target===this)hideCartela()">
+  <div class="modal">
+    <h2 id="cartela-title">Cartela</h2>
+    <div class="sub" id="cartela-sub"></div>
+    <div id="cartela-body"></div>
+    <button class="close" onclick="hideCartela()">Fechar</button>
+  </div>
+</div>
+
+<script>
+const OPTION_LABELS = ["Casa", "Empate", "Fora", "Anul."];
+const ANNULLED = 3;
+let evtSource = null;
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function initials(label){
+  const s = String(label).replace(/[#]/g,' ').trim();
+  const parts = s.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return s.slice(0,2).toUpperCase();
+}
+
+function connectSSE(){
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource("/stream");
+  evtSource.onopen = () => { dot.className = "dot on"; conn.textContent = "Ao vivo"; };
+  evtSource.onerror = () => { dot.className = "dot"; conn.textContent = "Reconectando…"; setTimeout(connectSSE, 3000); };
+  evtSource.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    if (d.type === "ranking") renderRanking(d.ranking, d.official, d.total_games, d.games);
+  };
+}
+
+function renderGames(official, total){
+  const bar = document.getElementById("games");
+  bar.innerHTML = "";
+  for (let g=0; g<total; g++){
+    const has = official[g] !== undefined;
+    const anul = official[g] === ANNULLED;
+    const div = document.createElement("div");
+    div.className = "chip" + (has ? (anul ? " anul" : " set") : "");
+    div.innerHTML = `<span class="g">J${g+1}</span><span class="r">${has ? OPTION_LABELS[official[g]] : "—"}</span>`;
+    bar.appendChild(div);
+  }
+}
+
+function heroHtml(ranking, official, totalGames){
+  // jogos ainda SEM resultado podem ser ganhos; anulados não contam pra ninguém
+  const decididos = Object.keys(official).length;
+  const anulados = Object.values(official).filter(v => v === ANNULLED).length;
+  const pendentes = totalGames - decididos;
+  const encerrados = decididos - anulados;
+
+  const lider = ranking[0];
+  const maxScore = lider.score || 0;
+  // melhor pontuação ainda alcançável e quantas cartelas podem chegar nela
+  const melhor = maxScore + pendentes;
+  const comChance = ranking.filter(r => (r.score + pendentes) >= melhor).length;
+  const fim = pendentes === 0;
+
+  const chanceTxt = fim
+    ? `cartela(s) <b>CAMPEÃ(S)</b> com ${melhor} acertos 🏆`
+    : `cartela(s) com chance de <b>${melhor} acertos</b>`;
+
+  return `<div class="hero${fim ? " final" : ""}">
+    <div class="side">
+      <span class="tag">${fim ? "🎲 líder da simulação" : "⭐ líder atual"}</span>
+      <div class="lead-name">${escHtml(lider.label)}</div>
+      <div class="lead-sc">${lider.score}<small>acertos</small></div>
+    </div>
+    <div class="cup">🏆</div>
+    <div class="side" style="text-align:right">
+      <span class="tag">${fim ? "🏁 encerrado" : "🎯 ainda dá!"}</span>
+      <div class="chance-n">${comChance}</div>
+      <div class="chance-t">${chanceTxt}</div>
+      <div class="sub">⚽ jogos encerrados: <b>${encerrados}/${totalGames}</b>${anulados ? ` · anulados: ${anulados}` : ""}</div>
+    </div>
+  </div>`;
+}
+
+function rowHtml(row, official, total, maxScore, i){
+  const pct = maxScore>0 ? Math.round(row.score/maxScore*100) : 0;
+  const picks = (row.choices || []).map((c,g)=>{
+    const res = official ? official[g] : undefined;
+    let cls = "pk";
+    if (res===ANNULLED) cls="pk anul";
+    else if (res!==undefined) cls = c===res ? "pk hit" : "pk miss";
+    const t = (c!==null && c!==undefined) ? OPTION_LABELS[c] : "?";
+    return `<span class="${cls}">${t}</span>`;
+  }).join("");
+  return `<div class="row clk" onclick="showCartela(${i})" title="Ver a grade desta cartela">
+    <div class="pos">${row.position}</div>
+    <div class="who"><div class="name">${escHtml(row.label)}</div><div class="picks">${picks}</div></div>
+    <div class="scorebox"><div class="n">${row.score}</div><div class="bar"><i style="width:${pct}%"></i></div></div>
+  </div>`;
+}
+
+/* Tabela estilo Excel: cada cartela numa linha, 1 coluna por jogo (o que marcou) */
+function tableHtml(ranking, official, total){
+  const heads = Array.from({length:total},(_,g)=>`<th>J${g+1}</th>`).join("");
+  const body = ranking.map((r,i)=>{
+    const cells = Array.from({length:total},(_,g)=>{
+      const c=(r.choices||[])[g], res = official ? official[g] : undefined;
+      let cls="tc";
+      if (res===ANNULLED) cls="tc anul";
+      else if (res!==undefined) cls = c===res ? "tc hit" : "tc miss";
+      const t=(c!==null && c!==undefined) ? OPTION_LABELS[c] : "?";
+      return `<td class="${cls}">${t}</td>`;
+    }).join("");
+    return `<tr onclick="showCartela(${i})"><td class="pos">${r.position}</td>`+
+           `<td class="who">${escHtml(r.label)}</td>${cells}<td class="pts">${r.score}</td></tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table class="rtable">`+
+    `<thead><tr><th>#</th><th class="who">Cartela / Nome</th>${heads}<th>Pts</th></tr></thead>`+
+    `<tbody>${body}</tbody></table></div>`;
+}
+
+/* Grade de UMA cartela (ao clicar) — os 8 jogos, o que marcou e acertou/errou */
+function showCartela(i){
+  if (!_rank || !_rank.ranking[i]) return;
+  const r=_rank.ranking[i], official=_rank.official||{}, total=_rank.totalGames||8;
+  document.getElementById("cartela-title").textContent = r.label;
+  document.getElementById("cartela-sub").textContent = `${r.score} acerto(s) · posição ${r.position}º`;
+  const rows = Array.from({length:total},(_,g)=>{
+    const c=(r.choices||[])[g], res = official[g];
+    let st="", tag="—";
+    if (res===ANNULLED){ st="anul"; tag="anulado"; }
+    else if (res!==undefined){ st = c===res?"hit":"miss"; tag = c===res?"✓ acertou":"✗ errou"; }
+    const pick=(c!==null && c!==undefined)?OPTION_LABELS[c]:"—";
+    // nome dos times, se a rodada tiver (ex.: "GRÊMIO × BOLÍVAR"); senão "Jogo N"
+    const G=_rank.games; const gm = (G && G[g]) ? `${escHtml(G[g][0])} × ${escHtml(G[g][1])}` : `Jogo ${g+1}`;
+    return `<div class="cg-row ${st}"><div class="cg-game">${gm}</div>`+
+           `<div class="cg-pick">${pick}</div><div class="cg-tag">${tag}</div></div>`;
+  }).join("");
+  document.getElementById("cartela-body").innerHTML = `<div class="cgrid">${rows}</div>`;
+  document.getElementById("cartela-modal").classList.add("show");
+}
+function hideCartela(){ document.getElementById("cartela-modal").classList.remove("show"); }
+
+let _view="cards", _rank=null;
+function toggleView(){
+  _view = _view==="cards" ? "tabela" : "cards";
+  document.getElementById("view-btn").textContent = _view==="cards" ? "📋 Tabela" : "🃏 Cards";
+  if (_rank) renderRanking(_rank.ranking, _rank.official, _rank.totalGames, _rank.games);
+}
+
+function renderRanking(ranking, official, totalGames, games){
+  official = official || {}; totalGames = totalGames || 8;
+  _rank = {ranking, official, totalGames, games};   // guarda pro modal e a troca de vista
+  renderGames(official, totalGames);
+  const podW = document.getElementById("podium-wrap");
+  const listW = document.getElementById("list-wrap");
+  const resultsSet = Object.keys(official).length;
+
+  if (!ranking || ranking.length === 0){
+    podW.innerHTML = "";
+    listW.innerHTML = `<div class="empty"><div class="spin"></div>Aguardando processamento das cartelas…</div>`;
+    document.getElementById("summary").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("summary").innerHTML =
+    `<span class="pillcount"><b>${ranking.length}</b> cartelas</span>
+     <span class="pillcount"><b>${resultsSet}</b>/${totalGames} jogos apurados</span>`;
+
+  const maxScore = Math.max(1, ranking[0].score || 0);
+
+  // Destaque: líder + jogos encerrados + quantas cartelas ainda alcançam o máximo
+  podW.innerHTML = heroHtml(ranking, official, totalGames);
+
+  // lista: cartões (padrão) OU tabela estilo Excel — clique numa cartela abre a grade
+  listW.innerHTML = _view === "tabela"
+    ? tableHtml(ranking, official, totalGames)
+    : `<div class="list">${ranking.map((r,i)=>rowHtml(r,official,totalGames,maxScore,i)).join("")}</div>`;
+}
+
+/* Parcial */
+function showParcial(){
+  const m=document.getElementById("parcial-modal"), sub=document.getElementById("parcial-sub"), body=document.getElementById("parcial-body");
+  sub.textContent="Carregando…"; body.innerHTML=""; m.classList.add("show");
+  fetch("/api/parcial").then(r=>r.json()).then(d=>{
+    if (d.error || !d.distribution || !d.distribution.length){ sub.textContent="Sem dados ainda. Aguardando apuração."; return; }
+    sub.textContent=`${d.total_cards} cartelas · ${d.valid_games} jogo(s) apurado(s)`;
+    body.innerHTML=d.distribution.map(it=>{
+      const top=d.valid_games>0 && it.score===d.valid_games;
+      return `<div class="drow${top?" top":""}"><span>${it.score} ponto(s)</span><span class="cnt">${it.count} jogador(es)</span></div>`;
+    }).join("");
+  }).catch(()=>{ sub.textContent="Erro ao carregar a parcial."; });
+}
+function hideParcial(){ document.getElementById("parcial-modal").classList.remove("show"); }
+
+/* Simular — INTERATIVO: você escolhe o resultado dos jogos que faltam
+   (Casa/Empate/Fora) e vê na hora quantas cartelas seriam campeãs — e quais. */
+let _sim=null;
+function showSimular(){
+  const m=document.getElementById("simular-modal"), sub=document.getElementById("simular-sub"), body=document.getElementById("simular-body");
+  sub.textContent="Carregando…"; body.innerHTML=""; m.classList.add("show");
+  fetch("/api/simular").then(r=>r.json()).then(d=>{
+    if (d.error){ sub.textContent="Sem dados ainda. Aguardando apuração."; return; }
+    if (!d.pending || !d.pending.length){ sub.textContent="Todos os 8 jogos apurados — ranking final. 🏆"; body.innerHTML=""; return; }
+    // pré-seleciona a opção mais votada de cada jogo (ponto de partida)
+    const chosen={};
+    d.per_game.forEach(pg=>{
+      const best=Math.max(pg.casa,pg.empate,pg.fora);
+      chosen[pg.game]= pg.casa===best?0 : (pg.empate===best?1:2);
+    });
+    _sim={per_game:d.per_game, chosen};
+    sub.innerHTML=`Toque no resultado dos <b>${d.pending.length} jogo(s)</b> que faltam e veja quem ganha 👇`;
+    renderSim();
+  }).catch(()=>{ sub.textContent="Erro ao carregar a simulação."; });
+}
+function pickSim(game, choice){ _sim.chosen[game]=choice; renderSim(); }
+function renderSim(){
+  const body=document.getElementById("simular-body"), s=_sim;
+  const opt=(pg,val,lb)=>{
+    const sel=s.chosen[pg.game]===val;
+    const cnt=val===0?pg.casa:(val===1?pg.empate:pg.fora);
+    return `<div class="opt pick${sel?' sel':''}" onclick="pickSim(${pg.game},${val})">
+      <div class="lb">${lb}</div><div class="vv">${cnt}</div></div>`;
+  };
+  let html=`<div class="simresult" id="simres"><div class="spin"></div></div>`;
+  s.per_game.forEach(pg=>{
+    html+=`<div class="simcard"><div class="h">Jogo ${pg.game+1}</div>
+      <div class="opts">${opt(pg,0,"Casa")}${opt(pg,1,"Empate")}${opt(pg,2,"Fora")}</div></div>`;
+  });
+  body.innerHTML=html;
+  updateSimResult();
+}
+function updateSimResult(){
+  fetch("/api/simular_outcome",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chosen:_sim.chosen})}).then(r=>r.json()).then(d=>{
+    const res=document.getElementById("simres"); if(!res) return;
+    const names=(d.winners||[]).slice(0,50).map(w=>
+      `<div class="li"><b>${escHtml(w.label)}</b><span>${w.score} acertos</span></div>`).join("");
+    const more=d.n_winners>50?`<div class="li"><span>+ ${d.n_winners-50} cartela(s)…</span></div>`:"";
+    res.innerHTML=`<div class="rbig">${d.n_winners}</div>
+      <div class="rtxt">cartela(s) <b>campeã(s)</b> com <b>${d.max_score}</b> acertos 🏆</div>
+      <div class="leadlist">${names}${more}</div>`;
+  }).catch(()=>{});
+}
+function hideSimular(){ document.getElementById("simular-modal").classList.remove("show"); }
+
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ hideParcial(); hideSimular(); } });
+
+fetch("/api/ranking").then(r=>r.json()).then(d=>renderRanking(d.ranking, d.official, 8, d.games)).catch(()=>{});
+connectSSE();
+</script>
+</body>
+</html>
