@@ -80,6 +80,18 @@ def _broadcast(data: dict) -> None:
             _subscribers.remove(q)
 
 
+def _session_name() -> str:
+    """Nome/dia da rodada da sessão ativa (ex.: 'Bolão de Quarta — 13/08') —
+    mostrado no topo do ranking pra o cliente saber de qual rodada é."""
+    if _active_session_id is None:
+        return ""
+    try:
+        s = db_mod.get_session(_active_session_id, _db_path)
+        return (s or {}).get("name") or ""
+    except Exception:
+        return ""
+
+
 def _push_ranking_update() -> None:
     if _active_session_id is None:
         return
@@ -93,6 +105,7 @@ def _push_ranking_update() -> None:
         "official": official,
         "total_games": 8,
         "games": db_mod.get_session_games(_active_session_id, _db_path),
+        "round": _session_name(),
     })
 
 
@@ -114,7 +127,7 @@ def stream():
                 marks = db_mod.get_marks_for_session(_active_session_id, _db_path)
                 display = ranking_to_display(ranking, marks)
                 games = db_mod.get_session_games(_active_session_id, _db_path)
-                yield f"data: {json.dumps({'type': 'ranking', 'ranking': display, 'official': official, 'total_games': 8, 'games': games})}\n\n"
+                yield f"data: {json.dumps({'type': 'ranking', 'ranking': display, 'official': official, 'total_games': 8, 'games': games, 'round': _session_name()})}\n\n"
 
             while True:
                 try:
@@ -147,6 +160,7 @@ def api_ranking():
         "ranking": ranking_to_display(ranking, marks),
         "official": official,
         "games": db_mod.get_session_games(_active_session_id, _db_path),
+        "round": _session_name(),
     })
 
 

@@ -27,7 +27,7 @@ def _get_local_ip() -> str:
 
 # Versão VISÍVEL (título + log). O maior problema recorrente em campo foi
 # confusão de versão ("qual exe você rodou?") — mostrar o número acaba com isso.
-APP_VERSION = "v58"
+APP_VERSION = "v59"
 
 OPTION_LABELS = ["Casa", "Empate", "Fora"]
 COLORS = {
@@ -382,9 +382,11 @@ class BolaoApp(tk.Tk):
     def _new_session(self):
         if self._db is None:
             return
-        name = simpledialog.askstring("Nova Sessão", "Nome do bolão:",
-                                      initialvalue="Bolão 2024",
-                                      parent=self)
+        name = simpledialog.askstring(
+            "Nova Sessão",
+            "Nome/dia da rodada:\n"
+            "(aparece no TOPO do ranking pros clientes — ex.: Bolão de Quarta — 13/08)",
+            initialvalue="Bolão de Quarta", parent=self)
         if not name:
             return
         self.session_id = self._db.create_session(name)

@@ -79,6 +79,12 @@
       background: linear-gradient(90deg, var(--green), #7be8bf);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
+    .brand-txt { min-width: 0; }
+    /* nome/dia da rodada (ex.: "Bolão de Quarta — 13/08") — some quando vazio */
+    .round { display:none; margin-top: 3px; font-size: clamp(.72rem, 2.6vw, .86rem);
+      font-weight: 800; color: var(--gold, #ffcf3f); letter-spacing:.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62vw; }
+    .round.on { display:block; }
     .head-actions { display: flex; align-items: center; gap: .5rem; }
 
     .btn {
@@ -323,7 +329,10 @@
   <div class="wrap head-inner">
     <div class="brand">
       <div class="logo">⚽</div>
-      <h1>Bolão<span>Ranking ao Vivo</span></h1>
+      <div class="brand-txt">
+        <h1>Bolão<span>Ranking ao Vivo</span></h1>
+        <div class="round" id="round-name"></div>
+      </div>
     </div>
     <div class="head-actions">
       <button class="btn" id="view-btn" onclick="toggleView()">📋 Tabela</button>
@@ -405,8 +414,18 @@ function connectSSE(){
   evtSource.onerror = () => { dot.className = "dot"; conn.textContent = "Reconectando…"; setTimeout(connectSSE, 3000); };
   evtSource.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === "ranking") renderRanking(d.ranking, d.official, d.total_games, d.games);
+    if (d.type === "ranking") { setRound(d.round); renderRanking(d.ranking, d.official, d.total_games, d.games); }
   };
+}
+
+// Nome/dia da rodada no topo (ex.: "Bolão de Quarta — 13/08"); some se vazio.
+function setRound(name){
+  const el = document.getElementById("round-name");
+  if (!el) return;
+  name = (name || "").trim();
+  el.textContent = name;
+  el.className = name ? "round on" : "round";
+  document.title = name ? (name + " — Ranking ao Vivo") : "Bolão — Ranking ao Vivo";
 }
 
 function renderGames(official, total){
@@ -620,7 +639,7 @@ function hideSimular(){ document.getElementById("simular-modal").classList.remov
 
 document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ hideParcial(); hideSimular(); } });
 
-fetch("/api/ranking").then(r=>r.json()).then(d=>renderRanking(d.ranking, d.official, 8, d.games)).catch(()=>{});
+fetch("/api/ranking").then(r=>r.json()).then(d=>{ setRound(d.round); renderRanking(d.ranking, d.official, 8, d.games); }).catch(()=>{});
 connectSSE();
 </script>
 </body>
