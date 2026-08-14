@@ -27,7 +27,9 @@ def _get_local_ip() -> str:
 
 # Versão VISÍVEL (título + log). O maior problema recorrente em campo foi
 # confusão de versão ("qual exe você rodou?") — mostrar o número acaba com isso.
-APP_VERSION = "v59"
+# v60: cartela digital exporta o NOME do apostador em coluna separada ("Nome"),
+#      sem mexer no rótulo "Pág X #Y" — o site mostra o nome na Classificação Geral.
+APP_VERSION = "v60"
 
 OPTION_LABELS = ["Casa", "Empate", "Fora"]
 COLORS = {
