@@ -29,8 +29,10 @@ def _first_text(pre):
 
 def _game_columns(rows):
     """Se houver cabeçalho com 'Jogo 1'..'Jogo 8', devolve (índices das 8 colunas
-    de jogo POR POSIÇÃO, índice da coluna Participante). Ler por posição é o que
-    mantém um jogo EM BRANCO no lugar certo."""
+    de jogo POR POSIÇÃO, índice da coluna Participante/rótulo, índice da coluna
+    Nome). Ler por posição é o que mantém um jogo EM BRANCO no lugar certo. A coluna
+    "Nome" (nome do apostador da cartela digital) é SEPARADA do rótulo — preserva o
+    nome ao juntar arquivos, sem sujar o "Pág X #Y"."""
     for row in rows:
         cols = {}
         for i, c in enumerate(row):
@@ -39,10 +41,15 @@ def _game_columns(rows):
                 cols[int(m.group(1))] = i
         if all(g in cols for g in range(1, 9)):
             part = next((i for i, c in enumerate(row)
-                         if re.search(r"particip|nome|apostador", str(c), re.IGNORECASE)),
+                         if re.search(r"particip|apostador", str(c), re.IGNORECASE)),
                         None)
-            return [cols[g] for g in range(1, 9)], part
-    return None, None
+            nome = next((i for i, c in enumerate(row)
+                         if re.fullmatch(r"\s*nome\s*", str(c), re.IGNORECASE)),
+                        None)
+            if part is None:            # arquivo antigo/3º sem "Participante": o
+                part = nome             # rótulo cai na própria coluna "Nome"
+            return [cols[g] for g in range(1, 9)], part, nome
+    return None, None, None
 
 
 def parse_cards(path):
@@ -54,12 +61,16 @@ def parse_cards(path):
     esqueceu o jogo 4) sumia e os jogos seguintes subiam uma casa — o branco
     "escorregava" pro jogo 8. Agora cada coluna guarda o seu valor."""
     rows = [[str(c).strip() for c in row] for row in _load_rows(path)]
-    gcols, pcol = _game_columns(rows)
+    gcols, pcol, ncol = _game_columns(rows)
     cards = []
     for cells in rows:
+        nome = ""
         if gcols is not None:                  # cabeçalho achado → lê por coluna
             choices = [(_tok_choice(cells[i]) if i < len(cells) else None) for i in gcols]
             part = cells[pcol] if (pcol is not None and pcol < len(cells)) else ""
+            # nome do apostador (coluna "Nome") — só se for coluna SEPARADA do rótulo
+            if ncol is not None and ncol != pcol and ncol < len(cells):
+                nome = cells[ncol]
             # NÃO exige nº mínimo de marcas: uma cartela com poucos jogos (ou até
             # nenhum) marcados AINDA é cartela — antes o corte "< 4 marcas" a
             # derrubava do ranking e bagunçava a numeração das outras. Pula só o
@@ -78,7 +89,7 @@ def parse_cards(path):
             choices = [(_tok_choice(cells[i]) if i < len(cells) else None)  # vazio=None
                        for i in range(first, first + 8)]
             participant = _first_text(cells[:first])
-        cards.append({"participant": participant, "choices": choices})
+        cards.append({"participant": participant, "choices": choices, "nome": nome or ""})
     return cards
 
 
@@ -120,6 +131,6 @@ def import_file(session_id, path, source_label="", db_path=None):
             label = f"{source_label} · {label}"
         results.append(CardResult(card_index=base + i, page=page, marks=marks,
                                   has_review_flags=any(m.needs_review for m in marks),
-                                  participant=label))
+                                  participant=label, nome=(pc.get("nome") or None)))
     db.save_card_results(session_id, results, db_path)
     return len(results)

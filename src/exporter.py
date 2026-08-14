@@ -58,6 +58,7 @@ def _build_rows(session_id: int, db_path: Path = None) -> List[Dict]:
         score = ranking_map.get(card["id"], "")
         rows.append({
             "Participante": participant,
+            "Nome": card.get("nome") or "",   # nome do apostador (cartela digital) — p/ o site
             "Página": card["page"],
             "Card": card["card_index"] + 1,
             **{f"Jogo {i+1}": choices[i] for i in range(8)},
@@ -95,7 +96,7 @@ def export_excel(session_id: int, output_path: str,
     thin = Side(style="thin", color="CCCCCC")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    headers = ["Participante", "Página", "Card"] + \
+    headers = ["Participante", "Nome", "Página", "Card"] + \
               [f"Jogo {i+1}" for i in range(8)] + ["Revisão", "Total"]
 
     # Write header row

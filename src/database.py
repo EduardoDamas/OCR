@@ -115,6 +115,11 @@ def init_db(db_path: Path = None) -> None:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()]
         if "games_json" not in cols:
             conn.execute("ALTER TABLE sessions ADD COLUMN games_json TEXT")
+        # migração: nome do apostador (cartela digital) — coluna SEPARADA do rótulo
+        # `participant` ("Pág X #Y"), vai só pro export/site sem mexer no display/PDF.
+        cols_cards = [r[1] for r in conn.execute("PRAGMA table_info(cards)").fetchall()]
+        if "nome" not in cols_cards:
+            conn.execute("ALTER TABLE cards ADD COLUMN nome TEXT")
 
 
 def set_session_games(session_id: int, games, db_path: Path = None) -> None:
@@ -183,10 +188,11 @@ def save_card_results(session_id: int, card_results,
             })
             cur = conn.execute(
                 """INSERT INTO cards (session_id, page, card_index, participant,
-                                      has_review, raw_json)
-                   VALUES (?,?,?,?,?,?)""",
+                                      nome, has_review, raw_json)
+                   VALUES (?,?,?,?,?,?,?)""",
                 (session_id, cr.page, cr.card_index,
                  getattr(cr, "participant", None),
+                 getattr(cr, "nome", None),
                  int(cr.has_review_flags), raw)
             )
             card_id = cur.lastrowid
@@ -392,7 +398,8 @@ def export_session_bundle(session_id: int, db_path: Path = None) -> Optional[Dic
                    "raw_scores": m["raw_scores"]} for m in marks.get(c["id"], [])]
         out_cards.append({
             "page": c["page"], "card_index": c["card_index"],
-            "participant": c["participant"], "has_review": c["has_review"],
+            "participant": c["participant"], "nome": c.get("nome"),
+            "has_review": c["has_review"],
             "marks": cmarks,
         })
     return {
@@ -417,9 +424,10 @@ def import_session_bundle(bundle: Dict, db_path: Path = None) -> int:
         for c in bundle.get("cards", []):
             cur = conn.execute(
                 """INSERT INTO cards (session_id, page, card_index, participant,
-                                      has_review, raw_json) VALUES (?,?,?,?,?,?)""",
+                                      nome, has_review, raw_json)
+                   VALUES (?,?,?,?,?,?,?)""",
                 (sid, c["page"], c["card_index"], c.get("participant"),
-                 int(c.get("has_review", 0)), None))
+                 c.get("nome"), int(c.get("has_review", 0)), None))
             card_id = cur.lastrowid
             for m in c.get("marks", []):
                 rs = m.get("raw_scores")

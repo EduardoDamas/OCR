@@ -460,20 +460,23 @@ def _read_page(p, page_number: int, games=8) -> List[CardResult]:
     zone_offsets = sorted(_gap_split(offsets, 3)) if len(offsets) >= 3 else None
 
     # Nome do apostador: cada cartela tem "NOME: ..." — casado à sua célula pela
-    # posição (fileira/coluna). Vira parte do rótulo JUNTO com Pág+Nº (ver abaixo).
+    # posição (fileira/coluna). SEMPRE capturado num campo SEPARADO (`nome`), que vai
+    # só pro EXPORT/site (coluna "Nome"). O RÓTULO (participant) continua "Pág X #Y" —
+    # INCLUDE_NAMES controla apenas se o nome TAMBÉM aparece grudado no rótulo, o que
+    # desconfigurava a organização (por isso fica False). Assim o site mostra o nome
+    # do cliente sem mexer no display/PDF/ranking do programa.
     names = {}
-    if INCLUDE_NAMES:
-        for b in p.get_text("dict").get("blocks", []):
-            for ln in b.get("lines", []):
-                txt = " ".join(s["text"] for s in ln["spans"]).strip()
-                up = txt.upper()
-                if up.startswith("NOME") or up.startswith("APOSTADOR"):
-                    nm = txt.split(":", 1)[1] if ":" in txt else ""
-                    nm = "".join(ch for ch in nm if ch.isprintable()).strip()
-                    if nm:
-                        x0, y0, x1, y1 = ln["bbox"]
-                        rr = _nearest(y0, row_centers); cc = _assign_col(x0, col_bounds)
-                        names[(rr, cc)] = nm
+    for b in p.get_text("dict").get("blocks", []):
+        for ln in b.get("lines", []):
+            txt = " ".join(s["text"] for s in ln["spans"]).strip()
+            up = txt.upper()
+            if up.startswith("NOME") or up.startswith("APOSTADOR"):
+                nm = txt.split(":", 1)[1] if ":" in txt else ""
+                nm = "".join(ch for ch in nm if ch.isprintable()).strip()
+                if nm:
+                    x0, y0, x1, y1 = ln["bbox"]
+                    rr = _nearest(y0, row_centers); cc = _assign_col(x0, col_bounds)
+                    names[(rr, cc)] = nm
 
     results: List[CardResult] = []
     for r in range(n_rows):
@@ -492,16 +495,17 @@ def _read_page(p, page_number: int, games=8) -> List[CardResult]:
                     marks.append(MarkResult(game=g, choice=None, confidence=0.0,
                                             needs_review=True, raw_scores=[0, 0, 0]))
             ci = r * n_cols + c
-            # Rótulo = SEMPRE Pág+Nº (pra localizar a página) + nome quando existe.
-            # "Pág 3 #2 — João" quando tem nome; "Pág 3 #2" quando não tem.
+            # Rótulo (participant) = SEMPRE Pág+Nº pra localizar a página no display/PDF.
+            # O nome vai num campo SEPARADO (`nome`) → só pro export/site. Só grudo no
+            # rótulo se INCLUDE_NAMES (hoje False, pra não desconfigurar a organização).
             nm = names.get((r, c))
             label = f"Pág {page_number} #{ci + 1}"
-            if nm:
+            if nm and INCLUDE_NAMES:
                 label = f"{label} — {nm}"
             results.append(CardResult(card_index=ci, page=page_number,
                                       marks=marks,
                                       has_review_flags=any(m.needs_review for m in marks),
-                                      participant=label))
+                                      participant=label, nome=nm))
     return results
 
 

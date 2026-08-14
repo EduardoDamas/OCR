@@ -65,7 +65,8 @@ class CardResult:
     page: int
     marks: List[MarkResult]
     has_review_flags: bool
-    participant: Optional[str] = None   # bettor name (digital sheets / merged files)
+    participant: Optional[str] = None   # RÓTULO de localização ("Pág X #Y") — usado no display/PDF
+    nome: Optional[str] = None          # NOME do apostador (cartela digital) — só p/ export/site, NÃO entra no rótulo
 
 
 _INSET = 2
