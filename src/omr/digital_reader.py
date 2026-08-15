@@ -65,6 +65,26 @@ def _filled_squares(p):
     return out
 
 
+def _filled_dots(p):
+    """Centres of small FILLED vector CIRCLES used as marks — o ● desenhado em
+    vetor (curvas Bézier), não glifo de texto nem ■ retângulo. Ex.: PDFs do
+    'BOLÃO DA ALEGRIA': marca = círculo preenchido pequeno (~5px), opção não
+    marcada = círculo só de contorno (sem fill). A marca tem fill + curva ('c')
+    e bounding box pequeno e ~quadrado."""
+    out = []
+    for d in p.get_drawings():
+        fill = d.get("fill")
+        if fill is None or fill == (1, 1, 1):     # precisa de fill real (não branco)
+            continue
+        if not any(it[0] == "c" for it in d.get("items", [])):  # círculo = tem curva
+            continue
+        r = d["rect"]
+        w, h = r.width, r.height
+        if 2 < w < 16 and 2 < h < 16 and abs(w - h) < 3:
+            out.append(((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2))
+    return out
+
+
 def _x_marks(p):
     """Centres of the 'X' letter used as a mark (ex.: folhas "BOLÃO ESCAPA"/"BOLÃO
     EXTRA" onde a marca é um X: `X TIME1 TIME2`=Casa, `TIME1 X TIME2`=Empate,
@@ -134,6 +154,9 @@ def _mark_positions(p):
     sq = _filled_squares(p)
     if len(sq) >= 8 and len(sq) % 8 == 0:
         return sq
+    fd = _filled_dots(p)                     # ● vetorial (círculo preenchido)
+    if len(fd) >= 8 and len(fd) % 8 == 0:
+        return fd
     xs = _x_marks(p)
     if len(xs) >= 8 and len(xs) % 8 == 0:
         return xs
@@ -141,7 +164,7 @@ def _mark_positions(p):
     if len(im) >= 8 and len(im) % 8 == 0:
         return im
     # nenhum formou grade exata — devolve o mais forte (o %8 decide em is_digital)
-    return max([dots, sq, xs, im], key=len)
+    return max([dots, sq, fd, xs, im], key=len)
 
 
 def _page_is_digital(p) -> bool:
