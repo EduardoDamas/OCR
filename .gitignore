@@ -24,3 +24,4 @@ samples/
 *.jpg
 *.png
 leitura_*.csv
+scratchpad_build*.log
