@@ -1,0 +1,22 @@
+192 INFO: PyInstaller: 6.21.0, contrib hooks: 2026.6
+193 INFO: Python: 3.12.10
+217 INFO: Platform: Windows-11-10.0.26200-SP0
+217 INFO: Python environment: C:\Users\Administrator\AppData\Local\Programs\Python\Python312
+221 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\pyinstaller.exe',
+ 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages',
+ 'D:\\myproject\\OCR']
+556 INFO: Appending 'datas' from .spec
+556 INFO: checking Analysis
+599 INFO: Building because excludes changed
+599 INFO: Looking for Python shared library...
+599 INFO: Using Python shared library: C:\Users\Administrator\AppData\Local\Programs\Python\Python312\python312.dll
+599 INFO: Running Analysis Analysis-00.toc
+599 INFO: Target bytecode optimization level: 0
+599 INFO: Initializing module dependency graph...
+600 INFO: Initializing module graph hook caches...
+623 INFO: Analyzing modules for base_library.zip ...

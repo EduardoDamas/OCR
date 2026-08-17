@@ -9,8 +9,14 @@ in the middle (between the two teams) = Empate, or far-right (after the away
 team) = Fora.  24 cartelas per page (4 columns × 6 rows), 8 games each.
 """
 
+import re
 from typing import List
 from .recognizer import MarkResult, CardResult
+
+# Rodapé das cartelas "BOLÃO ESCAPA": "Nº - NOME" à esquerda (o código fica num
+# elemento separado, à direita). Ex.: "1 - IVAN GILMAR", "94 - OS MOREN". Captura
+# o NOME (grupo 1) pra levar pro Excel/site, sem depender de "NOME:" no cabeçalho.
+_FOOTER_NOME_RE = re.compile(r"^\s*\d+\s*-\s*(.+?)\s*$")
 
 
 # Rótulo das digitais. O cliente pediu duas coisas em momentos diferentes:
@@ -488,6 +494,10 @@ def _read_page(p, page_number: int, games=8) -> List[CardResult]:
     # INCLUDE_NAMES controla apenas se o nome TAMBÉM aparece grudado no rótulo, o que
     # desconfigurava a organização (por isso fica False). Assim o site mostra o nome
     # do cliente sem mexer no display/PDF/ranking do programa.
+    # Fileiras de referência pra casar o RODAPÉ (que fica ABAIXO da cartela) com a
+    # cartela certa: o cabeçalho logo acima do rodapé. Usa os cabeçalhos quando há;
+    # senão, os centros das marcas.
+    row_anchors = hdr_rows if len(hdr) >= 2 else row_centers
     names = {}
     for b in p.get_text("dict").get("blocks", []):
         for ln in b.get("lines", []):
@@ -500,6 +510,18 @@ def _read_page(p, page_number: int, games=8) -> List[CardResult]:
                     x0, y0, x1, y1 = ln["bbox"]
                     rr = _nearest(y0, row_centers); cc = _assign_col(x0, col_bounds)
                     names[(rr, cc)] = nm
+            else:
+                # Rodapé "Nº - NOME" das cartelas recebidas de outro sistema. Casa pela
+                # COLUNA (x) e pela fileira do cabeçalho logo ACIMA do rodapé (o rodapé
+                # fica no rodapé da cartela, então _nearest por centro erraria a fileira).
+                fm = _FOOTER_NOME_RE.match(txt)
+                if fm:
+                    nm = re.sub(r"\s+", " ", fm.group(1)).strip()
+                    if nm:
+                        x0, y0 = ln["bbox"][0], ln["bbox"][1]
+                        cc = _assign_col(x0, col_bounds)
+                        rr = max(0, min(sum(1 for hy in row_anchors if hy < y0) - 1, n_rows - 1))
+                        names.setdefault((rr, cc), nm)
 
     results: List[CardResult] = []
     for r in range(n_rows):

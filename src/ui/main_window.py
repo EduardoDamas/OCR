@@ -29,7 +29,9 @@ def _get_local_ip() -> str:
 # confusão de versão ("qual exe você rodou?") — mostrar o número acaba com isso.
 # v60: cartela digital exporta o NOME do apostador em coluna separada ("Nome"),
 #      sem mexer no rótulo "Pág X #Y" — o site mostra o nome na Classificação Geral.
-APP_VERSION = "v60"
+# v61: lê o NOME do rodapé "Nº - NOME" das cartelas BOLÃO ESCAPA (PDF recebido de
+#      outro sistema) — antes o nome só saía do campo "NOME:". Coluna "Nome" no Excel.
+APP_VERSION = "v61"
 
 OPTION_LABELS = ["Casa", "Empate", "Fora"]
 COLORS = {
