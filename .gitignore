@@ -4,6 +4,8 @@
 *-token.txt
 *.key
 *_key.txt
+_CREDENCIAIS_LOCAL.md
+*.secret.md
 # pasta data/ = banco (nomes dos apostadores) + ai_config.json (chave IA) + cloud_config.json
 data/
 
